@@ -1,12 +1,12 @@
 # Automated Employee Onboarding with Microsoft Entra ID Lifecycle Workflows
 
-A home lab project that automates new hire onboarding using **Microsoft Entra ID Governance (Lifecycle Workflows)**. Instead of repeating the same checklist for every new employee, a workflow enables the account, assigns licenses, adds the user to the right group, and sends a welcome email automatically.
+A home lab project that automates new hire onboarding using **Microsoft Entra ID Governance (Lifecycle Workflows)**. Instead of repeating the same checklist for every new employee, one workflow enables the account, assigns licenses, adds the user to the right group, and sends a welcome email automatically.
 
 > **Note:** This is a lab environment. User details were entered manually to stand in for an HR system, and the workflow was started with **Run on demand** for testing.
 
 ---
 
-## Overview
+## Project Overview
 
 | | |
 |---|---|
@@ -19,43 +19,53 @@ A home lab project that automates new hire onboarding using **Microsoft Entra ID
 
 ## The Flow
 
-New hire details entered, then the workflow starts, then:
+New hire details entered, then the workflow runs these tasks in order:
 
 1. Enable user account
-2. Assign licenses (M365 E3 + Entra Suite)
+2. Assign licenses (Microsoft 365 E3 + Entra Suite)
 3. Add user to the IT Level 1 group
 4. Send welcome email
 
-The new hire then signs in, sets a password, and registers MFA.
+The new hire then signs in, sets a new password, and registers MFA.
 
 ## Prerequisites
 
-- An Entra ID Governance license (included in the Entra Suite) is required for Lifecycle Workflows. Without it the page returns a **401 "You don't have access"** error.
-- The user needs the attributes the workflow relies on: **Department, Job title, Employee hire date, Manager, Usage location**.
-- The target group must be a regular **Assigned** group. Role-assignable groups cannot be changed by workflows.
-- The license task must run before the email task, so the mailbox exists.
+Before building the workflow, make sure:
+
+- **An Entra ID Governance license** (included in the Entra Suite) is assigned. Without it, the Lifecycle workflows page shows a **401 "You don't have access"** error.
+- **The user has the attributes the workflow relies on:** Department, Job title, Employee hire date, Manager, and Usage location. Usage location is required before any license can be assigned.
+- **The target group is a regular Security group with Assigned membership.** Groups with *"Microsoft Entra roles can be assigned to the group"* set to Yes (role-assignable) are greyed out and cannot be used by workflows.
+- **The license task runs before the email task**, so the mailbox exists when the email is sent.
 
 ---
 
 ## Step-by-Step Walkthrough
 
-### 1. Lifecycle Workflows dashboard
+### Step 1: Open Lifecycle Workflows
 
-![Lifecycle workflows dashboard](images/Dashboard_Lifecycle_workflows.jpg)
+![Lifecycle workflows dashboard](Dashboard%20Lifecycle%20workflows.jpg)
 
-Everything starts in **ID Governance > Lifecycle workflows**. The overview shows the workflow schedule (Entra checks for matching users **every 3 hours** by default), how many schedules are enabled, and any alerts. From here I created the workflow with **Create workflow**.
+1. Sign in to the **Microsoft Entra admin center** (entra.microsoft.com) as a Global Administrator.
+2. Go to **ID Governance > Lifecycle workflows**.
+3. The overview page shows the workflow schedule (Entra checks for matching users **every 3 hours** by default), how many schedules are enabled, and any alerts.
+4. Click **Create workflow** to start.
 
-### 2. Workflow list
+### Step 2: Create the workflow from a template
 
-![Workflow list](images/IT_onboarding_workflow_view.jpg)
+1. On the template page, choose **Onboard new hire employee**.
+2. **Basics tab:** give the workflow a name (I used `IT onboarding`). Leave the trigger as **Time based attribute**, **0 days**, **On**, **employeeHireDate**. These fields come from the template.
+3. **Configure scope tab:** set the rule so only the right users are processed:
+   - Property: `department`
+   - Operator: `equal`
+   - Value: the exact department text on the users (for example `IT Department`)
 
-The **Workflows** page lists every workflow with its created date, schedule status, and enabled status. Here I have two: `Onboard new hire employee` (Sales) and `IT onboarding`. The schedule is set to **No**, so they only run when started manually. The toolbar provides **Run on demand**, **Clone**, **Enable schedule**, and **Delete**.
+   The match must be exact, including capitalization and spaces. A user whose department text differs will not appear in the Run on demand list.
 
-### 3. Choosing the tasks
+### Step 3: Choose the tasks
 
-![Task selector](images/task_selector_window_choose_task_to_automate.jpg)
+![Task selector](task%20selector%20window%20choose%20task%20to%20automate.jpg)
 
-The **Select tasks** pane shows the built-in task library, filtered to the **Joiner** category. Available tasks include:
+On the **Review tasks** tab, click **Add task**. The pane shows the built-in task library, filtered to the **Joiner** category:
 
 - Add user to groups
 - Enable User Account
@@ -68,51 +78,81 @@ The **Select tasks** pane shows the built-in task library, filtered to the **Joi
 - Assign licenses to user
 - Update user attributes
 
-For this workflow I used four: **Enable User Account**, **Assign licenses to user**, **Add user to groups**, and **Send Welcome email**.
+I used four: **Enable User Account**, **Assign licenses to user**, **Add user to groups**, and **Send Welcome email**.
 
-### 4. Selecting the licenses
+### Step 4: Configure the license task
 
-![Select license](images/select__license_to_automate.jpg)
+![Select license](select%20%20license%20to%20automate.jpg)
 
-In the **Assign licenses to user** task I selected **Microsoft 365 E3** and **Microsoft Entra Suite**. The E3 license includes Exchange Online, which creates the user's mailbox. This task has to run **before** the welcome email so the email has somewhere to land.
+1. Open the **Assign licenses to user** task.
+2. Under **Select licenses**, tick **Microsoft 365 E3** and **Microsoft_Entra_Suite**.
+3. Click **Select**, then **Save**.
 
-### 5. Workflow results
+The E3 license includes Exchange Online, which creates the user's mailbox. This task has to run **before** the welcome email, so the email has somewhere to land.
 
-![Workflow history](images/IT_onboarding_successul_task.jpg)
+### Step 5: Configure the group task and set the task order
 
-After running the workflow, **Workflow history** shows:
+1. Open **Add user to groups** and select the **IT Level 1** group. If the group is greyed out, it is role-assignable and must be recreated as a normal Security group.
+2. Leave **Continue workflow execution on error** unchecked, so failures are obvious while testing.
+3. Use **Reorder** to set the final order:
+   1. Enable User Account
+   2. Assign licenses to user
+   3. Add user to groups
+   4. Send Welcome email
+
+### Step 6: Create and view the workflow
+
+![Workflow list](IT%20onboarding%20workflow%20view.jpg)
+
+1. Click **Review + create**, check the summary, and click **Create**. Leave the schedule off for testing.
+2. The **Workflows** page lists every workflow with its created date, schedule status, and enabled status. Here I have two: `Onboard new hire employee` (Sales) and `IT onboarding`.
+3. The toolbar provides **Run on demand**, **Clone**, **Enable schedule**, and **Delete**.
+
+### Step 7: Run the workflow on demand
+
+1. Tick the checkbox next to the workflow and click **Run on demand**.
+2. Click **Select users** and choose the new hire. If the user is missing, their department or job title doesn't match the scope rule.
+3. Click **Run workflow**. Run on demand skips the schedule and the hire date check, so it is ideal for testing.
+
+### Step 8: Check the results
+
+![Workflow history](IT%20onboarding%20successul%20task.jpg)
+
+Open the workflow and go to **Workflow history**. The result for this run:
 
 - 1 user processed, **1 successful, 0 failed**
 - 4 total tasks, **0 failed tasks**
 - Status: **Completed**
 
-### 6. Account enabled
+The **Users**, **Runs**, and **Tasks** tabs show results per user, per run, and per task, and a failed task shows its error.
 
-![Account enabled](images/account_enabled.jpg)
+### Step 9: Verify the account was enabled
 
-The new hire's profile shows **Account status: Enabled**, with 2 assigned licenses and group membership. No admin touched the account, and the workflow did all of it.
+![Account enabled](account%20enabled.jpg)
 
-### 7. Added to the group
+The new hire's profile in **Entra ID > Users** shows **Account status: Enabled**, with 2 assigned licenses and group membership. No admin touched the account, and the workflow did all of it.
 
-![Group membership](images/employee_added_to_group_task_successful.jpg)
+### Step 10: Verify the group membership
 
-The **IT Level 1** group's member list now includes the new hire. The **Add user to groups** task did this automatically.
+![Group membership](employee%20added%20to%20group%20task%20successful.jpg)
 
-### 8. Welcome email
+Open **Groups > IT Level 1 > Members**. The new hire is now in the member list, added by the **Add user to groups** task.
 
-![Welcome email](images/welcome_email_to_new_employees.jpg)
+### Step 11: Check the welcome email
+
+![Welcome email](welcome%20email%20to%20new%20employees.jpg)
 
 The new hire received the welcome email in their new Outlook mailbox. It greets them by name, links to the My Apps portal, and names their manager as the contact for next steps.
 
-### 9. First sign-in: password update
+### Step 12: First sign-in, password update
 
-![Password update](images/new_employee_setting_up_new_email_pass.jpg)
+![Password update](new%20employee%20setting%20up%20new%20email%20pass.jpg)
 
-On first sign-in, Entra requires the new hire to **update their password**, since the account was created with a temporary one.
+On first sign-in, Entra requires the new hire to **update their password**, because the account was created with a temporary one.
 
-### 10. First sign-in: MFA registration
+### Step 13: First sign-in, MFA registration
 
-![MFA registration](images/user_first_login__to_her_email_with_mfa.jpg)
+![MFA registration](user%20first%20login%20%20to%20her%20email%20with%20mfa.jpg)
 
 After the password change, the user is prompted to register **Microsoft Authenticator** by scanning a QR code, so the account is protected with MFA from day one.
 
@@ -120,20 +160,21 @@ After the password change, the user is prompted to register **Microsoft Authenti
 
 ## Troubleshooting
 
-### Welcome email task failed
+### The welcome email task failed
 
-![Assigning a license manually](images/assign_license_so_email_will_push_through.jpg)
+![Assigning a license manually](assign%20license%20so%20email%20will%20push%20through.jpg)
 
-In an earlier test with Sales users, the **Send Welcome email** task failed, and the **Add user to groups** task after it never ran (it showed as *unprocessed*). The cause was a missing mailbox: those users had no Exchange license. I assigned **Microsoft 365 E3** in the Microsoft 365 admin center, and the email went through on the next run. In the final IT workflow, license assignment runs as a task before the email, which prevents the problem.
+In an earlier test with Sales users, **Send Welcome email** failed, and the **Add user to groups** task after it never ran (it showed as *unprocessed*). The cause was a missing mailbox: those users had no Exchange license. I assigned **Microsoft 365 E3** in the Microsoft 365 admin center, and the email went through on the next run. In the final IT workflow, license assignment runs as a task before the email, which prevents the problem.
 
 ### Other issues I hit
 
 | Issue | Cause | Fix |
 |---|---|---|
 | 401 on the Lifecycle workflows page | No ID Governance license | Start the Entra Suite trial and sign in again |
-| Groups greyed out in the group task | Groups were role-assignable | Recreate them as normal Security groups, Assigned |
+| Groups greyed out in the group task | Groups were role-assignable | Recreate them as normal Security groups with Assigned membership |
 | User missing from the Run on demand list | Department text didn't match the scope rule | Make the department value identical |
-| One failed task blocks the rest | Workflow stops on error by default | Order tasks carefully, or tick *Continue workflow execution on error* for non-critical tasks |
+| One failed task blocks the rest | The workflow stops on error by default | Order tasks carefully, or tick *Continue workflow execution on error* for non-critical tasks |
+| Run on demand shows "successful" but history is empty | History takes a few minutes to update | Wait, then click Refresh |
 
 ## Lessons Learned
 

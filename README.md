@@ -1,0 +1,1 @@
+# Onboarding-a-new-employee-in-Entra-ID-with-zero-repetitive-clicks-
